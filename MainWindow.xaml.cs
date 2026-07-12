@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using Forms = System.Windows.Forms;
 
 namespace Widgicity
 {
@@ -15,12 +16,64 @@ namespace Widgicity
         private bool _isSynchronizingUi = false;
         private WidgetSettings? _selectedWidget;
         private readonly string _storagePath = Path.Combine(Path.GetTempPath(), "WidgicityConf.json");
+        private Forms.NotifyIcon? _trayIcon;
+        private bool _isExiting = false;
 
         public MainWindow()
         {
             InitializeComponent();
             LoadConfiguration();
-            this.Closed += MainWindow_Closed;
+            InitializeTrayIcon();
+            this.Closing += MainWindow_Closing;
+        }
+
+        private void ShowFromTray()
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+        }
+
+        private void MainWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            if (_isExiting) return; // real shutdown in progress, let it happen
+
+            e.Cancel = true;
+            this.Hide();
+        }
+
+        private void InitializeTrayIcon()
+        {
+            _trayIcon = new Forms.NotifyIcon
+            {
+                Icon = System.Drawing.Icon.ExtractAssociatedIcon(
+                    System.Reflection.Assembly.GetExecutingAssembly().Location),
+                Visible = true,
+                Text = "Widgicity"
+            };
+
+            var menu = new Forms.ContextMenuStrip();
+            menu.Items.Add("Open Dashboard", null, (s, e) => ShowFromTray());
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add("Exit", null, (s, e) => ExitApplication());
+            _trayIcon.ContextMenuStrip = menu;
+
+            _trayIcon.DoubleClick += (s, e) => ShowFromTray();
+        }
+
+        private void ExitApplication()
+        {
+            _isExiting = true;
+
+            foreach (var win in _loadedWindows.Values)
+            {
+                win.Close();
+            }
+            SaveConfiguration();
+
+            _trayIcon?.Dispose();
+            System.Windows.Application.Current.Shutdown();
+
         }
 
         private void LoadConfiguration()

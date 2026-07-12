@@ -5,7 +5,7 @@ using Microsoft.Web.WebView2.Core;
 
 namespace Widgicity
 {
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         public static CoreWebView2Environment? SharedWebViewEnvironment { get; private set; }
 

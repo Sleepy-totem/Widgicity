@@ -8,6 +8,10 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
+using Cursors = System.Windows.Input.Cursors;
+
 namespace Widgicity
 {
     public class OverlayWindow : Window
@@ -53,8 +57,8 @@ namespace Widgicity
         {
             Grid rootGrid = new Grid();
 
-            _browser.HorizontalAlignment = HorizontalAlignment.Stretch;
-            _browser.VerticalAlignment = VerticalAlignment.Stretch;
+            _browser.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+            _browser.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
 
             // Connect dynamic structural border around layout elements
             _containerBorder.Child = _browser;
