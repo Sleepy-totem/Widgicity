@@ -1,0 +1,11 @@
+﻿<Application x:Class="Widgicity.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <!-- Modern Dark Theme Styles -->
+        <SolidColorBrush x:Key="BgDark" Color="#121214"/>
+        <SolidColorBrush x:Key="BgCard" Color="#1E1E24"/>
+        <SolidColorBrush x:Key="TextLight" Color="#EAEAEA"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#6200EE"/>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,133 @@
+﻿<Window x:Class="Widgicity.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Widgicity" Height="650" Width="1200"
+        Background="#121214" SnapsToDevicePixels="True"
+        Topmost="True">
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar Navigation Menu -->
+        <Border Background="#1E1E24" CornerRadius="6" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="WIDGETS" Foreground="#EAEAEA" FontWeight="Bold" Margin="5,0,0,10"/>
+
+                <ListBox x:Name="WidgetListBox" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                         SelectionChanged="WidgetListBox_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Foreground="#EAEAEA" Padding="4"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Button Grid.Row="2" Content="+ New Widget" Click="AddWidget_Click" Height="34" 
+                        Background="#6200EE" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
+            </Grid>
+        </Border>
+
+        <!-- Control Properties Inspector Area -->
+        <Border Grid.Column="1" Background="#1E1E24" CornerRadius="6" Margin="15,0,0,0" Padding="20"
+                x:Name="PropertiesPanel" Visibility="Collapsed">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="Widget Settings" FontSize="18" Foreground="#EAEAEA" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                    <!-- Input Name Field -->
+                    <TextBlock Text="Widget Identifier Name:" Foreground="#EAEAEA" Margin="0,0,0,5"/>
+                    <Grid Margin="0,0,0,15">
+                        <TextBox x:Name="TxtName" TextChanged="SettingControl_Changed" Height="30" Background="#2D2D35" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center" Padding="5,0,0,0"/>
+                        <TextBlock IsHitTestVisible="False" Text="e.g. Live Stats Stream" Foreground="#757575" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Text, ElementName=TxtName}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+
+                    <!-- Input Target Web URL Field -->
+                    <TextBlock Text="Widget Source URL Address:" Foreground="#EAEAEA" Margin="0,0,0,5"/>
+                    <Grid Margin="0,0,0,15">
+                        <TextBox x:Name="TxtUrl" TextChanged="SettingControl_Changed" Height="30" Background="#2D2D35" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center" Padding="5,0,0,0"/>
+                        <TextBlock IsHitTestVisible="False" Text="https://stats.cc/overlay" Foreground="#757575" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Text, ElementName=TxtUrl}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+
+                    <!-- Coordinates Matrix Tuning -->
+                    <TextBlock Text="Manual Window Vector Sizing &amp; Position Location Coordinates:" Foreground="#EAEAEA" Margin="0,0,0,5"/>
+                    <UniformGrid Columns="4" Margin="0,0,0,15">
+                        <StackPanel Margin="0,0,4,0">
+                            <TextBlock Text="PosX (X)" FontSize="11" Foreground="#9E9E9E"/>
+                            <TextBox x:Name="TxtX" TextChanged="SettingControl_Changed" Height="26" Background="#2D2D35" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Margin="2,0,2,0">
+                            <TextBlock Text="PosY (Y)" FontSize="11" Foreground="#9E9E9E"/>
+                            <TextBox x:Name="TxtY" TextChanged="SettingControl_Changed" Height="26" Background="#2D2D35" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Margin="2,0,2,0">
+                            <TextBlock Text="Width (W)" FontSize="11" Foreground="#9E9E9E"/>
+                            <TextBox x:Name="TxtWidth" TextChanged="SettingControl_Changed" Height="26" Background="#2D2D35" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Margin="4,0,0,0">
+                            <TextBlock Text="Height (H)" FontSize="11" Foreground="#9E9E9E"/>
+                            <TextBox x:Name="TxtHeight" TextChanged="SettingControl_Changed" Height="26" Background="#2D2D35" Foreground="White" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <!-- Sliders Viewport Canvas Controls -->
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="Opacity Scale (%)" Foreground="#EAEAEA"/>
+                            <Slider x:Name="SldOpacity" Minimum="10" Maximum="100" ValueChanged="SettingControl_Changed" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                            <TextBlock Text="Zoom Scaling (%)" Foreground="#EAEAEA"/>
+                            <Slider x:Name="SldZoom" Minimum="25" Maximum="400" ValueChanged="SettingControl_Changed" TickFrequency="5" IsSnapToTickEnabled="True"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Combined Behavior Application Toggle -->
+                    <CheckBox x:Name="ChkEnabled" Content="Enable Layer Window Rendering" Foreground="#EAEAEA" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="ChkLockAndClickThrough" Content="Lock Position &amp; Enable Click-Through" Foreground="#EAEAEA" Checked="SettingControl_Changed" Unchecked="SettingControl_Changed" Margin="0,0,0,25"/>
+
+                    <!-- Action Layout Command Buttons Panel Matrix -->
+                    <Border BorderBrush="#2D2D35" BorderThickness="0,1,0,0" Padding="0,15,0,0">
+                        <UniformGrid Columns="3" Height="34">
+                            <Button Content="Reset to 800x600" Click="ResetSize_Click" Margin="0,0,4,0" Background="#2D2D35" Foreground="White" BorderThickness="0"/>
+                            <Button Content="Duplicate Copy" Click="Duplicate_Click" Margin="2,0,2,0" Background="#2D2D35" Foreground="White" BorderThickness="0"/>
+                            <Button Content="Delete Permanently" Click="Delete_Click" Margin="4,0,0,0" Background="#D32F2F" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
+                        </UniformGrid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>
