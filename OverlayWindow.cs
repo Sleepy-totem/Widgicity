@@ -26,7 +26,8 @@ namespace Widgicity
         private DispatcherTimer? _processGateTimer;
         private bool _isHttpResponseOk = true;
         private bool _isProcessGateSatisfied = true;
-        private int _pollIntervalSeconds = 2; // new field, with a sane default
+        private int _pollIntervalSeconds = 2;
+        private bool _isClosed = false;
 
         public OverlayWindow(WidgetSettings settings, int pollIntervalSeconds = 2)
         {
@@ -53,6 +54,7 @@ namespace Widgicity
             this.SizeChanged += Window_SizeChanged;
             this.Closed += (s, e) =>
             {
+                _isClosed = true;
                 StopUpdatePolling();
                 StopProcessGateMonitor();
             };
@@ -110,6 +112,8 @@ namespace Widgicity
 
         private void ApplyVisibility()
         {
+            if (_isClosed) return;
+
             this.Visibility = (_isHttpResponseOk && _isProcessGateSatisfied)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
@@ -117,7 +121,11 @@ namespace Widgicity
 
         private void CheckProcessGate()
         {
-            _isProcessGateSatisfied = ProcessGate.IsProcessRunning(Settings.TargetProcessName);
+            string? target = Settings.TargetProcessName;
+            bool isRunning = ProcessGate.IsProcessRunning(target);
+            bool isFocused = isRunning && ProcessGate.IsProcessFocused(target);
+
+            _isProcessGateSatisfied = isFocused;
             ApplyVisibility();
         }
 

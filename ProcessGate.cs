@@ -6,10 +6,6 @@ namespace Widgicity
 {
     public static class ProcessGate
     {
-        /// <summary>
-        /// Returns true if a process with the given name is currently running.
-        /// Only checks process existence — never reads process memory or window content.
-        /// </summary>
         public static bool IsProcessRunning(string? processName)
         {
             if (string.IsNullOrWhiteSpace(processName)) return false;
@@ -31,10 +27,6 @@ namespace Widgicity
             }
         }
 
-        /// <summary>
-        /// Lists currently running apps that have a visible main window, for the picker UI.
-        /// Only reads process name + window title (both public, non-sensitive OS metadata).
-        /// </summary>
         public static List<(string DisplayTitle, string ProcessName)> GetRunningApps()
         {
             var results = new List<(string, string)>();
@@ -50,6 +42,32 @@ namespace Widgicity
             }
             results.Sort((a, b) => string.Compare(a.Item1, b.Item1, StringComparison.OrdinalIgnoreCase));
             return results;
+        }
+
+        public static bool IsProcessFocused(string? processName)
+        {
+            if (string.IsNullOrWhiteSpace(processName)) return false;
+
+            string trimmed = processName.Trim();
+            if (trimmed.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                trimmed = trimmed[..^4];
+
+            IntPtr hwnd = NativeMethods.GetForegroundWindow();
+            if (hwnd == IntPtr.Zero) return false;
+
+            NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid);
+            if (pid == 0) return false;
+
+            try
+            {
+                using var proc = Process.GetProcessById((int)pid);
+                return string.Equals(proc.ProcessName, trimmed, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // Process may have exited between the calls above; treat as not focused
+                return false;
+            }
         }
     }
 }
