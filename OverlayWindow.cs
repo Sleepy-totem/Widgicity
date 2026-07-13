@@ -9,11 +9,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Net.Http;
 using System.Windows.Threading;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using Cursors = System.Windows.Input.Cursors;
@@ -28,10 +23,6 @@ namespace Widgicity
         private readonly Border _containerBorder = new();
         private static readonly HttpClient _httpClient = new HttpClient();
         private DispatcherTimer? _updateCheckTimer;
-        private string? _lastETag;
-        private string? _lastModified;
-        private string? _lastContentHash;
-        private bool _isCheckingForUpdate = false;
 
         public OverlayWindow(WidgetSettings settings)
         {
@@ -153,9 +144,6 @@ namespace Widgicity
                     if (_browser.Source != validatedUri)
                     {
                         _browser.Source = validatedUri;
-                        _lastETag = null;
-                        _lastModified = null;
-                        _lastContentHash = null;
                     }
                 }
                 _browser.ZoomFactor = Settings.Zoom / 100.0;
@@ -175,9 +163,9 @@ namespace Widgicity
 
             _updateCheckTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(3) // adjust to taste
+                Interval = TimeSpan.FromSeconds(10) // Polling every 10 seconds
             };
-            _updateCheckTimer.Tick += async (s, e) => await CheckForContentUpdateAsync();
+            _updateCheckTimer.Tick += (s, e) => ExecuteNativeReload();
             _updateCheckTimer.Start();
         }
 
@@ -187,107 +175,11 @@ namespace Widgicity
             _updateCheckTimer = null;
         }
 
-        private async Task CheckForContentUpdateAsync()
-        {
-            if (_isCheckingForUpdate) return; // avoid overlapping checks
-            if (!Uri.TryCreate(Settings.Url, UriKind.Absolute, out var uri)) return;
-            if (_browser.CoreWebView2 == null) return;
-
-            _isCheckingForUpdate = true;
-            try
-            {
-                var request = new HttpRequestMessage(HttpMethod.Get, uri);
-
-                if (!string.IsNullOrEmpty(_lastETag))
-                    request.Headers.TryAddWithoutValidation("If-None-Match", _lastETag);
-                if (!string.IsNullOrEmpty(_lastModified))
-                    request.Headers.TryAddWithoutValidation("If-Modified-Since", _lastModified);
-
-                HttpResponseMessage response;
-                try
-                {
-                    response = await _httpClient.SendAsync(request);
-                }
-                catch (HttpRequestException)
-                {
-                    return; // network hiccup, just skip this cycle
-                }
-
-                if (response.StatusCode == System.Net.HttpStatusCode.NotModified)
-                {
-                    return; // server confirmed unchanged, nothing to do
-                }
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return; // don't act on error responses
-                }
-
-                string? newETag = response.Headers.ETag?.Tag;
-                string? newModified = response.Content.Headers.LastModified?.ToString("R");
-                string html = await response.Content.ReadAsStringAsync();
-                string newHash = ComputeHash(html);
-
-                bool isFirstCheck = _lastContentHash == null;
-                bool contentChanged = newHash != _lastContentHash;
-
-                _lastETag = newETag;
-                _lastModified = newModified;
-                _lastContentHash = newHash;
-
-                if (!isFirstCheck && contentChanged)
-                {
-                    await ApplyContentUpdateAsync(html);
-                }
-            }
-            finally
-            {
-                _isCheckingForUpdate = false;
-            }
-        }
-
-        private static string ComputeHash(string content)
-        {
-            byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
-            return Convert.ToHexString(bytes);
-        }
-
-        private async Task ApplyContentUpdateAsync(string html)
+        private void ExecuteNativeReload()
         {
             if (_browser.CoreWebView2 == null) return;
 
-            string? bodyContent = ExtractBodyInnerHtml(html);
-
-            await this.Dispatcher.InvokeAsync(async () =>
-            {
-                if (_browser.CoreWebView2 == null) return;
-
-                if (bodyContent == null)
-                {
-                    _browser.CoreWebView2.Reload();
-                    return;
-                }
-
-                try
-                {
-                    string script = "document.body.innerHTML = " + JsonSerializer.Serialize(bodyContent) + ";";
-                    await _browser.CoreWebView2.ExecuteScriptAsync(script);
-                }
-                catch
-                {
-                    _browser.CoreWebView2.Reload();
-                }
-            });
-        }
-
-        private static string? ExtractBodyInnerHtml(string html)
-        {
-            var match = Regex.Match(
-                html,
-                "<body[^>]*>(.*)</body>",
-                RegexOptions.Singleline | RegexOptions.IgnoreCase);
-
-            return match.Success ? match.Groups[1].Value : null;
+            _browser.CoreWebView2.Reload();
         }
 
         private void UpdateClickThrough()

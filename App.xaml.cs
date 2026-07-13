@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Threading;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
+using System.Runtime.InteropServices;
 
 namespace Widgicity
 {
@@ -15,6 +17,15 @@ namespace Widgicity
 
         private Mutex? _singleInstanceMutex;
         private EventWaitHandle? _showRequestedEvent;
+
+        // Win32 API imports to force the window into the foreground from the tray
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
 
         protected override async void OnStartup(StartupEventArgs e)
         {
@@ -84,17 +95,45 @@ namespace Widgicity
 
         private void ListenForShowRequests()
         {
-            while (true)
-            {
-                _showRequestedEvent!.WaitOne();
+            if (_showRequestedEvent == null) return;
 
-                Dispatcher.Invoke(() =>
+            while (_showRequestedEvent.WaitOne())
+            {
+                Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    if (Current?.MainWindow is MainWindow mainWindow)
+                    var mainWindow = Current.MainWindow as MainWindow;
+
+                    if (mainWindow != null)
                     {
-                        mainWindow.ShowFromTray();
+                        // 1. Make sure the window is visible if it was hidden to tray
+                        if (!mainWindow.IsVisible)
+                        {
+                            mainWindow.Show();
+                        }
+
+                        // 2. Un-minimize it if it was minimized
+                        if (mainWindow.WindowState == WindowState.Minimized)
+                        {
+                            mainWindow.WindowState = WindowState.Normal;
+                        }
+
+                        // 3. Get the native window handle
+                        var helper = new System.Windows.Interop.WindowInteropHelper(mainWindow);
+                        IntPtr hWnd = helper.Handle;
+
+                        if (hWnd != IntPtr.Zero)
+                        {
+                            // Force native restore and bring to top bypasses Windows focus stealing restrictions
+                            ShowWindow(hWnd, SW_RESTORE);
+                            SetForegroundWindow(hWnd);
+                        }
+
+                        // 4. Standard WPF activation pass
+                        mainWindow.Activate();
+                        mainWindow.Topmost = true;  // Temporary push to front
+                        mainWindow.Topmost = false; // Reset so it doesn't lock over other apps
                     }
-                });
+                }));
             }
         }
     }
