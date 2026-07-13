@@ -10,16 +10,20 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-		 <SelfContained>false</SelfContained>
-		 <PublishSingleFile>true</PublishSingleFile>
-		 <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-		 <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+		<!-- Single source of truth for the app version. Update this and the
+		     title bar / splash screen pick it up automatically via AppInfo.cs. -->
+		<Version>1.2.0</Version>
 
-		 <DebugType>none</DebugType>
-		 <DebugSymbols>false</DebugSymbols>
-		 <GenerateDocumentationFile>false</GenerateDocumentationFile>
-		 <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>false</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using Forms = System.Windows.Forms;
 
 namespace Widgicity
@@ -25,18 +26,33 @@ namespace Widgicity
             LoadConfiguration();
             InitializeTrayIcon();
             this.Closing += MainWindow_Closing;
+            this.Title = AppInfo.DisplayTitle;
+            this.Activated += (s, e) => EnsureAboveWidgets();
+            EnsureAboveWidgets();
         }
 
-        private void ShowFromTray()
+        public void ShowFromTray()
         {
             this.Show();
             this.WindowState = WindowState.Normal;
             this.Activate();
+            EnsureAboveWidgets();
+        }
+
+        private void EnsureAboveWidgets()
+        {
+            this.Topmost = true;
+
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero) return;
+
+            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+                NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
         }
 
         private void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
-            if (_isExiting) return; // real shutdown in progress, let it happen
+            if (_isExiting) return;
 
             e.Cancel = true;
             this.Hide();
@@ -137,11 +153,14 @@ namespace Widgicity
                     if (widget.IsEnabled && IsUrlValid(widget.Url) && !_loadedWindows.ContainsKey(widget.Id))
                     {
                         var oWin = new OverlayWindow(widget);
+                        oWin.Loaded += (s, e) => EnsureAboveWidgets();
                         _loadedWindows.Add(widget.Id, oWin);
                         oWin.Show();
                     }
                 }
             }
+
+            EnsureAboveWidgets();
         }
 
         private void WidgetListBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)

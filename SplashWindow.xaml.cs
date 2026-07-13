@@ -7,6 +7,7 @@ namespace Widgicity
         public SplashWindow()
         {
             InitializeComponent();
+            TxtVersion.Text = AppInfo.VersionString;
         }
 
         public void SetStatus(string message)
