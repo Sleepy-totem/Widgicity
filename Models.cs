@@ -19,6 +19,27 @@ namespace Widgicity
         private double _opacity = 100.0;
         private bool _isClickThrough = true; // Enabled by default
         private bool _isLocked = true;       // Locked by default to support click-through
+        private bool _requireTargetProcess = false;
+        private string _targetProcessName = "";
+        private double _refreshIntervalSeconds = 10.0;
+
+        public double RefreshIntervalSeconds
+        {
+            get => _refreshIntervalSeconds;
+            set { _refreshIntervalSeconds = value; OnPropertyChanged(); }
+        }
+
+        public bool RequireTargetProcess
+        {
+            get => _requireTargetProcess;
+            set { _requireTargetProcess = value; OnPropertyChanged(); }
+        }
+
+        public string TargetProcessName
+        {
+            get => _targetProcessName;
+            set { _targetProcessName = value; OnPropertyChanged(); }
+        }
 
         public Guid Id { get; set; } = Guid.NewGuid();
 
@@ -102,5 +123,6 @@ namespace Widgicity
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = "Default Profile";
         public List<WidgetSettings> Widgets { get; set; } = new();
+        public AppSettings Settings { get; set; } = new(); // new
     }
 }

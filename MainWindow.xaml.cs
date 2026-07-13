@@ -152,7 +152,7 @@ namespace Widgicity
                 {
                     if (widget.IsEnabled && IsUrlValid(widget.Url) && !_loadedWindows.ContainsKey(widget.Id))
                     {
-                        var oWin = new OverlayWindow(widget);
+                        var oWin = new OverlayWindow(widget, _activeProfile.Settings.ProcessCheckIntervalSeconds);
                         oWin.Loaded += (s, e) => EnsureAboveWidgets();
                         _loadedWindows.Add(widget.Id, oWin);
                         oWin.Show();
@@ -188,6 +188,9 @@ namespace Widgicity
                 SldZoom.Value = widget.Zoom;
                 ChkEnabled.IsChecked = widget.IsEnabled;
                 ChkLockAndClickThrough.IsChecked = widget.IsLocked;
+                ChkRequireProcess.IsChecked = widget.RequireTargetProcess;
+                TxtTargetProcess.Text = widget.TargetProcessName;
+                TxtRefreshInterval.Text = widget.RefreshIntervalSeconds.ToString();
 
                 _isSynchronizingUi = false;
             }
@@ -219,6 +222,19 @@ namespace Widgicity
             }
         }
 
+        private void OpenSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            var dlg = new SettingsWindow(_activeProfile.Settings) { Owner = this };
+            if (dlg.ShowDialog() == true && dlg.Result != null)
+            {
+                _activeProfile.Settings = dlg.Result;
+                SaveConfiguration();
+
+                foreach (var win in _loadedWindows.Values)
+                    win.SetPollInterval(_activeProfile.Settings.ProcessCheckIntervalSeconds);
+            }
+        }
+
         private void SettingControl_Changed(object? sender, EventArgs? e)
         {
             if (_isSynchronizingUi || _selectedWidget == null) return;
@@ -232,10 +248,14 @@ namespace Widgicity
             if (double.TryParse(TxtY.Text, out double y)) _selectedWidget.Y = y;
             if (double.TryParse(TxtWidth.Text, out double w)) _selectedWidget.Width = w;
             if (double.TryParse(TxtHeight.Text, out double h)) _selectedWidget.Height = h;
+            if (double.TryParse(TxtRefreshInterval.Text, out double refreshSeconds) && refreshSeconds > 0)
+                _selectedWidget.RefreshIntervalSeconds = refreshSeconds;
 
             _selectedWidget.Opacity = SldOpacity.Value;
             _selectedWidget.Zoom = SldZoom.Value;
             _selectedWidget.IsEnabled = ChkEnabled.IsChecked ?? false;
+            _selectedWidget.RequireTargetProcess = ChkRequireProcess.IsChecked ?? false;
+            _selectedWidget.TargetProcessName = TxtTargetProcess.Text;
 
             bool combinedLockState = ChkLockAndClickThrough.IsChecked ?? false;
             _selectedWidget.IsLocked = combinedLockState;
@@ -248,6 +268,17 @@ namespace Widgicity
             if (_loadedWindows.TryGetValue(_selectedWidget.Id, out var win))
             {
                 win.UpdateState();
+            }
+        }
+
+        private void PickProcess_Click(object? sender, RoutedEventArgs e)
+        {
+            var apps = ProcessGate.GetRunningApps();
+            var picker = new ProcessPickerWindow(apps) { Owner = this };
+            if (picker.ShowDialog() == true && picker.SelectedProcessName != null)
+            {
+                TxtTargetProcess.Text = picker.SelectedProcessName;
+                SettingControl_Changed(sender, e);
             }
         }
 

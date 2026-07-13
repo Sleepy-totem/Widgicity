@@ -23,10 +23,15 @@ namespace Widgicity
         private readonly Border _containerBorder = new();
         private static readonly HttpClient _httpClient = new HttpClient();
         private DispatcherTimer? _updateCheckTimer;
+        private DispatcherTimer? _processGateTimer;
+        private bool _isHttpResponseOk = true;
+        private bool _isProcessGateSatisfied = true;
+        private int _pollIntervalSeconds = 2; // new field, with a sane default
 
-        public OverlayWindow(WidgetSettings settings)
+        public OverlayWindow(WidgetSettings settings, int pollIntervalSeconds = 2)
         {
             Settings = settings;
+            _pollIntervalSeconds = pollIntervalSeconds;
 
             this.WindowStyle = WindowStyle.None;
             this.AllowsTransparency = true;
@@ -46,7 +51,11 @@ namespace Widgicity
             this.Loaded += Window_Loaded;
             this.LocationChanged += Window_LocationChanged;
             this.SizeChanged += Window_SizeChanged;
-            this.Closed += (s, e) => StopUpdatePolling();
+            this.Closed += (s, e) =>
+            {
+                StopUpdatePolling();
+                StopProcessGateMonitor();
+            };
 
             this.MouseLeftButtonDown += (s, e) =>
             {
@@ -92,17 +101,41 @@ namespace Widgicity
             _browser.CoreWebView2.WebResourceResponseReceived += (s, args) =>
             {
                 int statusCode = args.Response.StatusCode;
-                if (statusCode >= 400 && statusCode != 403)
-                {
-                    this.Dispatcher.Invoke(() => this.Visibility = Visibility.Collapsed);
-                }
-                else
-                {
-                    this.Dispatcher.Invoke(() => this.Visibility = Visibility.Visible);
-                }
+                _isHttpResponseOk = !(statusCode >= 400 && statusCode != 403);
+                this.Dispatcher.Invoke(ApplyVisibility);
             };
 
             UpdateState();
+        }
+
+        private void ApplyVisibility()
+        {
+            this.Visibility = (_isHttpResponseOk && _isProcessGateSatisfied)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private void CheckProcessGate()
+        {
+            _isProcessGateSatisfied = ProcessGate.IsProcessRunning(Settings.TargetProcessName);
+            ApplyVisibility();
+        }
+
+        private void StartProcessGateMonitor(int intervalSeconds)
+        {
+            StopProcessGateMonitor(); // restart cleanly if interval changed
+            _processGateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(Math.Max(1, intervalSeconds)) };
+            _processGateTimer.Tick += (s, e) => CheckProcessGate();
+            _processGateTimer.Start();
+            CheckProcessGate(); // evaluate immediately instead of waiting for first tick
+        }
+
+        private void StopProcessGateMonitor()
+        {
+            _processGateTimer?.Stop();
+            _processGateTimer = null;
+            _isProcessGateSatisfied = true;
+            ApplyVisibility();
         }
 
         public void UpdateState()
@@ -154,16 +187,36 @@ namespace Widgicity
             _browser.IsEnabled = Settings.IsLocked;
             this.Cursor = Settings.IsLocked ? Cursors.Arrow : Cursors.SizeAll;
 
+            if (Settings.RequireTargetProcess && !string.IsNullOrWhiteSpace(Settings.TargetProcessName))
+                StartProcessGateMonitor(_pollIntervalSeconds);
+            else
+                StopProcessGateMonitor();
+
             UpdateClickThrough();
+        }
+
+        public void SetPollInterval(int seconds)
+        {
+            _pollIntervalSeconds = Math.Max(1, seconds);
+            if (Settings.RequireTargetProcess && !string.IsNullOrWhiteSpace(Settings.TargetProcessName))
+                StartProcessGateMonitor(_pollIntervalSeconds);
         }
 
         private void StartUpdatePolling()
         {
-            if (_updateCheckTimer != null) return;
+            double intervalSeconds = Math.Max(1, Settings.RefreshIntervalSeconds);
+            var desiredInterval = TimeSpan.FromSeconds(intervalSeconds);
+
+            if (_updateCheckTimer != null)
+            {
+                if (_updateCheckTimer.Interval != desiredInterval)
+                    _updateCheckTimer.Interval = desiredInterval;
+                return;
+            }
 
             _updateCheckTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(10) // Polling every 10 seconds
+                Interval = desiredInterval
             };
             _updateCheckTimer.Tick += (s, e) => ExecuteNativeReload();
             _updateCheckTimer.Start();
