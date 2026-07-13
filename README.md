@@ -29,7 +29,7 @@ A lightweight Windows desktop app for pinning web content to your screen as tran
 ## Usage Notes
 
 - Widgets are only interactive (draggable, clickable through the overlay border) while unlocked. Lock them once you're done positioning.
-- Configuration is stored in `WidgicityConf.json` in your local temp folder (%temp%).
+- Configuration is stored in `WidgicityConf.json` in your local appdata folder (%AppData%\Widgicity\WidgicityConf.json.).
 - On first launch, Widgicity initializes its web engine, which can take a few seconds — a splash screen shows progress while this happens. Subsequent launches are much faster.
 
 ## Built With
